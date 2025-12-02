@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>행동특성 및 종합의견 생성기</title>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 아이콘 컴포넌트
+        const Icon = ({ name, className }) => {
+            const icons = {
+                Copy: <path d="M14 3h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H14M8 21h8a2 2 0 0 0 2-2v-3M8 21H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z" />,
+                RefreshCw: <g><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></g>,
+                BookOpen: <g><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></g>,
+                CheckCircle: <g><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></g>,
+                AlertCircle: <g><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></g>,
+                Edit3: <g><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></g>,
+                Plus: <g><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></g>,
+                Trash2: <g><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></g>,
+                List: <g><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></g>,
+                UserCheck: <g><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></g>,
+                Users: <g><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></g>,
+                ClipboardList: <g><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M9 12h.01" /><path d="M13 12h5" /><path d="M9 16h.01" /><path d="M13 16h5" /><path d="M9 20h.01" /><path d="M13 20h5" /></g>,
+                ThumbsUp: <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />,
+                ThumbsDown: <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
+            };
+            return (
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="24" height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                >
+                    {icons[name] || <circle cx="12" cy="12" r="10" />}
+                </svg>
+            );
+        };
+
+        const App = () => {
+            const [prosInput, setProsInput] = useState('');
+            const [consInput, setConsInput] = useState('');
+            const [sentenceCount, setSentenceCount] = useState(3);
+            const [selectedStudentNums, setSelectedStudentNums] = useState([]);
+            const [drafts, setDrafts] = useState([]);
+            const [savedEntries, setSavedEntries] = useState([]);
+
+            const keywordDB = {
+                '성실': ["매사 주어진 과제를 성실하게 수행하며 꾸준히 노력하는 태도가 돋보이고 학습 활동에 집중하여 참여함.", "학교 규칙을 잘 지키고 자신의 역할을 책임감 있게 완수하며, 매일 꾸준한 학습 습관을 유지하고 있음.", "수업 시간에 교사의 설명에 귀 기울이며 과제를 꼼꼼하게 해결하려는 끈기가 있어 학업 성취가 기대됨."],
+                '발표': ["자신의 생각이나 느낌을 조리 있게 발표하는 능력이 뛰어나며, 토의 활동에서 친구들의 의견을 경청하고 정리하여 말함.", "수업 중 궁금한 점을 적극적으로 질문하고 발표 기회를 놓치지 않으며, 자신감 있는 목소리로 의견을 전달함.", "다양한 주제에 대해 창의적인 의견을 제시하며, 발표 시 정확한 발음과 알맞은 성량으로 친구들의 이해를 도움."],
+                '경청': ["친구들의 이야기를 주의 깊게 듣고 공감하는 능력이 뛰어나며, 상대방의 의견을 존중하는 태도로 대화에 참여함.", "수업 시간에 선생님의 말씀을 놓치지 않고 들으며, 친구가 발표할 때 눈을 맞추고 경청하는 바른 태도를 지님.", "타인의 의견을 끝까지 듣고 수용할 줄 아는 포용력을 지녔으며, 이러한 태도로 인해 모둠 활동에서 중심 역할을 함."],
+                '창의': ["틀에 박힌 생각에서 벗어나 독창적인 아이디어를 자주 제시하며, 문제 해결 과정에서 새로운 방법을 시도하는 것을 즐김.", "미술 및 만들기 활동에서 남다른 표현력을 보여주며, 다양한 관점에서 사물을 관찰하고 해석하는 능력이 우수함.", "기존의 방식보다는 자신만의 새로운 방법을 찾아 과제를 해결하려 노력하며, 융통성 있는 사고방식을 가지고 있음."],
+                '배려': ["어려움을 겪는 친구를 보면 먼저 다가가 도움을 주며, 학급의 궂은일도 솔선수범하여 처리하는 따뜻한 마음씨를 지님.", "친구의 입장을 먼저 생각하고 양보하는 태도가 몸에 배어 있으며, 갈등 상황에서 평화적인 해결을 위해 노력함.", "소외되는 친구 없이 모두가 어울릴 수 있도록 챙기는 세심함이 돋보이며, 학급의 화목한 분위기 조성에 기여함."],
+                '리더십': ["학급의 의견을 모으고 조율하는 능력이 탁월하며, 친구들을 이끌어 목표를 달성하도록 독려하는 긍정적인 지도력이 있음.", "모둠 활동 시 구성원들의 역할을 합리적으로 분배하고, 의견 차이를 원만하게 해결하여 훌륭한 결과물을 만들어냄.", "자신의 주장을 내세우기보다 친구들의 의견을 존중하며 이끄는 서번트 리더십을 발휘하여 교우들의 신망이 두터움."],
+                '봉사': ["학급 1인 1역 활동을 책임감 있게 수행하며, 급식 지도나 청소 시간 등 남들이 하기 싫어하는 일에 앞장섬.", "도움이 필요한 곳에는 언제나 먼저 손을 내밀며, 대가 없는 봉사를 통해 친구들에게 선한 영향력을 행사함.", "교실 환경 정리에 관심을 갖고 스스로 주변을 정돈하며, 선생님과 친구들을 돕는 일에 기쁨을 느끼는 학생임."],
+                '교우': ["밝고 명랑한 성격으로 주변 친구들과 원만하게 어울리며, 유머 감각이 있어 친구들 사이에서 인기가 많음.", "새로운 친구에게도 먼저 다가가 친근하게 말을 걸며, 폭넓은 교우 관계를 형성하여 즐거운 학교생활을 영위함.", "친구들 사이의 오해를 풀어주는 중재자 역할을 잘 수행하며, 누구에게나 친절하고 상냥한 태도로 대함."],
+                '산만': ["관심 있는 분야에는 높은 집중력을 보이나, 다소 산만한 경향이 있어 차분하게 과제를 끝까지 수행하는 연습을 하고 있음.", "호기심이 많아 주변 상황에 민감하게 반응하지만, 최근에는 수업 규칙을 지키려 노력하며 학습 태도가 점차 차분해짐.", "에너지가 넘치고 활동적이나 때와 장소를 구분하는 법을 익히고 있으며, 교사의 조언을 받아들여 집중력이 향상되고 있음."],
+                '소극': ["다소 조용한 편이나 맡은 일은 묵묵히 해내는 끈기가 있으며, 최근에는 모둠 활동에서 조금씩 자신의 의견을 표현하려 노력함.", "발표에 대한 두려움을 극복하기 위해 노력하고 있으며, 친한 친구들과의 대화에서는 밝은 모습을 보이며 점차 자신감을 키워감.", "신중하게 생각하고 행동하는 편이며, 꾸준한 격려를 통해 자신의 잠재된 능력을 조금씩 밖으로 표출하고 있어 발전이 기대됨."],
+                '장난': ["유쾌한 성격으로 분위기를 띄우지만 때로는 과한 장난을 칠 때가 있어, 상대방의 기분을 생각하는 배려심을 기르고 있음.", "재치 있는 말로 친구들을 즐겁게 해주나 상황에 맞는 언행의 중요성을 깨닫고 있으며, 점차 진지한 태도로 수업에 임함.", "활달한 에너지를 긍정적인 방향으로 쓰기 위해 노력 중이며, 친구의 입장을 헤아리는 공감 능력을 키우며 성숙해지고 있음."],
+                '편식': ["특정 음식에 대한 선호가 뚜렷하였으나, 최근 급식 시간에 골고루 먹으려는 시도를 하며 식습관을 개선해 나가고 있음.", "건강한 신체를 위해 기피하던 채소류도 조금씩 도전해보며, 올바른 식생활의 중요성을 깨닫고 실천하려 노력함.", "음식의 소중함을 알고 남기지 않으려 노력하며, 편식 습관을 고치기 위해 스스로 목표를 정하고 실천하는 모습이 대견함."],
+                '다툼': ["자신의 주장이 강해 친구와 의견 충돌이 잦았으나, 최근에는 상대방의 말을 끝까지 듣고 양보하려는 태도를 보이며 변화하고 있음.", "감정 조절이 서툴러 갈등이 생기기도 했으나, 대화로 문제를 해결하는 방법을 익히며 친구 관계가 더욱 원만해지고 있음.", "친구와의 갈등 상황에서 자신의 잘못을 먼저 인정하고 사과할 줄 아는 용기가 있으며, 배려하는 마음을 키워가고 있음."]
+            };
+
+            const calculateByte = (str) => {
+                let byte = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const code = str.charCodeAt(i);
+                    byte += (code >> 7) ? 3 : 1;
+                }
+                return byte;
+            };
+
+            const toggleStudentNum = (num) => {
+                setSelectedStudentNums(prev => {
+                    if (prev.includes(num)) return prev.filter(n => n !== num);
+                    else return [...prev, num].sort((a, b) => a - b);
+                });
+            };
+
+            const createSingleOpinion = (keywords) => {
+                let selectedSentences = [];
+                const targetCount = parseInt(sentenceCount);
+
+                const shuffledKeywords = [...keywords].sort(() => 0.5 - Math.random());
+                shuffledKeywords.forEach(keyword => {
+                    if (selectedSentences.length < targetCount) {
+                        const templates = keywordDB[keyword];
+                        const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+                        selectedSentences.push(randomTemplate);
+                    }
+                });
+
+                let safetyCounter = 0;
+                while (selectedSentences.length < targetCount && safetyCounter < 20) {
+                    const randomKey = keywords[Math.floor(Math.random() * keywords.length)];
+                    const templates = keywordDB[randomKey];
+                    const unusedTemplates = templates.filter(t => !selectedSentences.includes(t));
+                    if (unusedTemplates.length > 0) {
+                        selectedSentences.push(unusedTemplates[Math.floor(Math.random() * unusedTemplates.length)]);
+                    } else {
+                        selectedSentences.push(templates[Math.floor(Math.random() * templates.length)]);
+                    }
+                    safetyCounter++;
+                }
+                return selectedSentences.join(' ');
+            };
+
+            const generateForSelectedStudents = () => {
+                const pros = prosInput.split(/[\s,]+/).filter(k => k.trim() !== '');
+                const cons = consInput.split(/[\s,]+/).filter(k => k.trim() !== '');
+                const allKeywords = [...pros, ...cons];
+                const validKeywords = allKeywords.filter(k => keywordDB[k]);
+
+                if (selectedStudentNums.length === 0) {
+                    alert("먼저 학생 번호를 선택해주세요.");
+                    return;
+                }
+                if (validKeywords.length === 0) {
+                    alert("유효한 키워드가 없습니다. (예: 성실, 배려, 산만 등)");
+                    return;
+                }
+
+                const displayKeywords = [
+                    pros.length > 0 ? `[장] ${pros.join(', ')}` : '',
+                    cons.length > 0 ? `[단] ${cons.join(', ')}` : ''
+                ].filter(Boolean).join(' / ');
+
+                const newDrafts = selectedStudentNums.map(num => ({
+                    studentNum: num,
+                    text: createSingleOpinion(validKeywords),
+                    keywords: displayKeywords,
+                    rawKeywordsList: validKeywords
+                }));
+
+                setDrafts(newDrafts);
+            };
+
+            const regenerateDraft = (num, rawKeywordsList) => {
+                setDrafts(prev => prev.map(draft => {
+                    if (draft.studentNum === num) return { ...draft, text: createSingleOpinion(rawKeywordsList) };
+                    return draft;
+                }));
+            };
+
+            const confirmDraft = (draft) => {
+                const newEntry = {
+                    id: Date.now() + Math.random(),
+                    studentNum: draft.studentNum,
+                    keywords: draft.keywords,
+                    content: draft.text,
+                    byteSize: calculateByte(draft.text)
+                };
+                setSavedEntries(prev => {
+                    const filtered = prev.filter(e => e.studentNum !== draft.studentNum);
+                    return [...filtered, newEntry].sort((a, b) => a.studentNum - b.studentNum);
+                });
+                setDrafts(prev => prev.filter(d => d.studentNum !== draft.studentNum));
+                setSelectedStudentNums(prev => prev.filter(n => n !== draft.studentNum));
+            };
+
+            const deleteEntry = (studentNum) => {
+                setSavedEntries(prev => prev.filter(e => e.studentNum !== studentNum));
+            };
+
+            const copyEntry = (text) => {
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+                alert("복사되었습니다.");
+            };
+
+            const copyAllToClipboard = () => {
+                if (savedEntries.length === 0) {
+                    alert("복사할 내용이 없습니다.");
+                    return;
+                }
+                const textToCopy = savedEntries.map(e => `${e.studentNum}\t${e.content}`).join('\n');
+                const textarea = document.createElement("textarea");
+                textarea.value = textToCopy;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+                alert(`총 ${savedEntries.length}명의 명단이 복사되었습니다.\n엑셀이나 NEIS에 붙여넣으세요.`);
+            };
+
+            const isStudentDone = (num) => savedEntries.some(e => e.studentNum === num);
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans p-4 md:p-8">
+                    <div className="max-w-6xl mx-auto space-y-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="bg-indigo-600 p-6 text-white">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Icon name="BookOpen" className="w-8 h-8" />
+                                    <h1 className="text-2xl font-bold">행동특성 및 종합의견 생성기</h1>
+                                </div>
+                                <p className="text-indigo-100 text-sm">
+                                    학생 번호를 선택하고 키워드를 입력하면, 학생마다 서로 다른 표현으로 문장을 생성해줍니다. (파일 저장 버전)
+                                </p>
+                            </div>
+                            
+                            <div className="p-6">
+                                <div className="mb-8">
+                                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-3">
+                                        <Icon name="Users" className="w-4 h-4" />
+                                        대상 학생 번호 선택
+                                    </label>
+                                    <div className="grid grid-cols-5 md:grid-cols-10 lg:grid-cols-15 gap-2">
+                                        {Array.from({ length: 30 }, (_, i) => i + 1).map(num => {
+                                            const isDone = isStudentDone(num);
+                                            const isSelected = selectedStudentNums.includes(num);
+                                            return (
+                                                <button
+                                                    key={num}
+                                                    onClick={() => toggleStudentNum(num)}
+                                                    className={`h-10 rounded-lg text-sm font-bold transition-all border-2 ${isDone ? 'bg-green-100 border-green-200 text-green-700 hover:bg-green-200' : isSelected ? 'bg-indigo-600 border-indigo-600 text-white shadow-md transform scale-105' : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300'}`}
+                                                >
+                                                    {num}번
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="flex gap-4 mt-2 text-xs font-medium text-slate-500 justify-end">
+                                        <span className="flex items-center gap-1"><div className="w-3 h-3 bg-white border-2 border-slate-200 rounded"></div>대기</span>
+                                        <span className="flex items-center gap-1"><div className="w-3 h-3 bg-indigo-600 rounded"></div>선택됨</span>
+                                        <span className="flex items-center gap-1"><div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>작업완료</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Icon name="Edit3" className="w-4 h-4 text-slate-700" />
+                                        <span className="text-sm font-bold text-slate-700">선택한 {selectedStudentNums.length}명의 학생에게 적용할 키워드</span>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-blue-600 flex items-center gap-1">
+                                                <Icon name="ThumbsUp" className="w-3 h-3" /> 장점 키워드
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={prosInput}
+                                                onChange={(e) => setProsInput(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && generateForSelectedStudents()}
+                                                placeholder="예: 성실 배려 발표"
+                                                className="w-full p-3 rounded-xl border-2 border-blue-100 focus:border-blue-500 outline-none bg-white"
+                                                disabled={selectedStudentNums.length === 0}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-orange-600 flex items-center gap-1">
+                                                <Icon name="ThumbsDown" className="w-3 h-3" /> 단점(개선점) 키워드
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={consInput}
+                                                onChange={(e) => setConsInput(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && generateForSelectedStudents()}
+                                                placeholder="예: 산만 장난 소극"
+                                                className="w-full p-3 rounded-xl border-2 border-orange-100 focus:border-orange-500 outline-none bg-white"
+                                                disabled={selectedStudentNums.length === 0}
+                                            />
+                                            <p className="text-[10px] text-slate-400 text-right">* 단점은 긍정적인 성장 문구로 변환됩니다.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-slate-700">문장 수:</span>
+                                            <div className="flex bg-white rounded-lg p-1 border border-slate-200">
+                                                {[1, 2, 3, 4, 5].map((num) => (
+                                                    <button
+                                                        key={num}
+                                                        onClick={() => setSentenceCount(num)}
+                                                        className={`px-3 py-1.5 rounded-md font-bold text-xs transition-all ${sentenceCount === num ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+                                                    >
+                                                        {num}개
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={generateForSelectedStudents}
+                                            disabled={selectedStudentNums.length === 0}
+                                            className={`px-8 py-3 rounded-xl font-bold text-lg shadow-md transition-all flex items-center gap-2 ${selectedStudentNums.length === 0 ? 'bg-slate-300 text-white cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-105 active:scale-95'}`}
+                                        >
+                                            <Icon name="RefreshCw" className="w-5 h-5" />
+                                            종합의견 생성하기
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid lg:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <Icon name="UserCheck" className="w-5 h-5 text-indigo-600" />
+                                        생성 결과 확인
+                                        <span className="text-sm font-normal text-slate-500 ml-2">({drafts.length}건 대기중)</span>
+                                    </h3>
+                                </div>
+
+                                {drafts.length === 0 ? (
+                                    <div className="bg-white rounded-xl p-8 text-center border-2 border-dashed border-slate-200 text-slate-400">
+                                        학생 번호를 선택하고 키워드를 입력해 생성해주세요.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4 animate-fadeIn">
+                                        {drafts.map((draft) => (
+                                            <div key={draft.studentNum} className="bg-white rounded-xl p-5 shadow-sm border border-indigo-100 hover:border-indigo-300 transition-all">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div>
+                                                        <span className="bg-indigo-600 text-white px-2 py-1 rounded text-sm font-bold mr-2">{draft.studentNum}번</span>
+                                                        <span className="text-xs text-slate-500">{draft.keywords}</span>
+                                                    </div>
+                                                    <div className="text-xs font-medium text-slate-400">{calculateByte(draft.text)} Bytes</div>
+                                                </div>
+                                                <p className="text-slate-800 text-sm leading-relaxed mb-4 min-h-[60px]">{draft.text}</p>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => regenerateDraft(draft.studentNum, draft.rawKeywordsList)}
+                                                        className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold flex items-center justify-center gap-1"
+                                                    >
+                                                        <Icon name="RefreshCw" className="w-3 h-3" /> 다시 생성
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => confirmDraft(draft)}
+                                                        className="flex-[2] py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-1 shadow-sm"
+                                                    >
+                                                        <Icon name="CheckCircle" className="w-3 h-3" /> 표에 확정하기
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <Icon name="List" className="w-5 h-5 text-green-600" />
+                                        완료된 명단
+                                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">{savedEntries.length}명</span>
+                                    </h3>
+                                    <button
+                                        onClick={copyAllToClipboard}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors shadow-sm"
+                                    >
+                                        <Icon name="ClipboardList" className="w-3.5 h-3.5" /> 전체 내용 복사
+                                    </button>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[300px]">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                                                <tr>
+                                                    <th className="p-3 w-14 text-center border-b">번호</th>
+                                                    <th className="p-3 border-b">내용</th>
+                                                    <th className="p-3 w-16 text-center border-b">관리</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {savedEntries.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="3" className="p-8 text-center text-slate-400 text-sm">아직 완료된 학생이 없습니다.</td>
+                                                    </tr>
+                                                ) : (
+                                                    savedEntries.map((entry) => (
+                                                        <tr key={entry.studentNum} className="hover:bg-slate-50 group">
+                                                            <td className="p-3 text-center font-bold text-green-700 align-top pt-4">{entry.studentNum}</td>
+                                                            <td className="p-3">
+                                                                <div className="text-xs text-slate-400 mb-1">{entry.keywords}</div>
+                                                                <p className="text-slate-800 text-xs leading-relaxed">{entry.content}</p>
+                                                                <div className="mt-1 text-xs text-slate-400 text-right">{entry.byteSize} Bytes</div>
+                                                            </td>
+                                                            <td className="p-3 text-center align-top pt-3">
+                                                                <div className="flex flex-col gap-1 items-center">
+                                                                    <button 
+                                                                        onClick={() => copyEntry(entry.content)}
+                                                                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
+                                                                        title="복사"
+                                                                    >
+                                                                        <Icon name="Copy" className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => deleteEntry(entry.studentNum)}
+                                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                                                        title="삭제"
+                                                                    >
+                                                                        <Icon name="Trash2" className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
